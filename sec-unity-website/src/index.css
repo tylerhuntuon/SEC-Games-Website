@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+/* Base resets tuned for Tailwind app layout */
+@layer base {
+  :root {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  html, body, #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-white text-gray-900;
+    margin: 0;
+  }
+
+  ::selection {
+    @apply bg-blue-200 text-blue-900;
+  }
+}
+
+/* Small, reusable component styles */
+@layer components {
+  .card {
+    @apply bg-white border rounded-xl shadow-sm hover:shadow-md transition-shadow;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 transition-colors;
+  }
+}

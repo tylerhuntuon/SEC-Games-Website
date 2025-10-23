@@ -1,0 +1,7 @@
+{
+  "title": "Your Game Name",
+  "displayName": "Your Game Name",
+  "description": "Your Description",
+  "slug": "your-url",
+  "aliases": ["AlternateGameName", "game3"]
+}

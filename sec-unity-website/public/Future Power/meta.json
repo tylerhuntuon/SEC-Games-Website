@@ -1,0 +1,8 @@
+{
+  "title": "Future Power",
+  "displayName": "Future Power",
+  "description": "Balance generation and demand to keep the city powered.",
+  "slug": "future-power",
+  "order": 1,
+  "aliases": ["FuturePower", "game1"]
+}

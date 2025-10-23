@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Unity Embed</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body { background: #000; }
+      #unity-container { position: relative; width: 100%; height: 100%; overflow: hidden; }
+      #unity-canvas { width: 100% !important; height: 100% !important; display: block; background: #231F20; }
+      #fs-btn {
+        position: absolute; right: 12px; bottom: 12px; z-index: 10;
+        border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.45); color: #fff;
+        padding: 8px 12px; border-radius: 8px; font-size: 14px; line-height: 1; cursor: pointer;
+        backdrop-filter: blur(2px); transition: background 120ms ease, border-color 120ms ease;
+      }
+      #fs-btn:hover { background: rgba(0,0,0,0.6); border-color: rgba(255,255,255,0.5); }
+      #fs-btn:active { background: rgba(0,0,0,0.7); }
+    </style>
+  </head>
+  <body>
+    <div id="unity-container">
+      <canvas id="unity-canvas" tabindex="-1" aria-label="Unity WebGL canvas"></canvas>
+      <button id="fs-btn" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⤢ Fullscreen</button>
+    </div>
+    <script>
+      // Parse query string: ?folder=unity-game-1&name=unity-game-1
+      const params = new URLSearchParams(location.search);
+      const folder = params.get('folder');
+      const name = params.get('name') || folder;
+      if (!folder) {
+        document.body.innerHTML = '<p style="color:#fff;padding:16px;">Missing required query param: folder</p>';
+        throw new Error('Missing folder param');
+      }
+
+      const encodePath = (value) =>
+        value
+          .split("/")
+          .map((segment) => encodeURIComponent(segment))
+          .join("/");
+
+      const encodedFolder = encodePath(folder);
+      const encodedName = encodePath(name);
+
+      const base = `/${encodedFolder}/Build/${encodedName}`;
+      const loaderUrl = `${base}.loader.js`;
+      const candidates = {
+        data: [`${base}.data`, `${base}.data.unityweb`, `${base}.data.gz`],
+        framework: [`${base}.framework.js`, `${base}.framework.js.unityweb`, `${base}.framework.js.gz`],
+        wasm: [`${base}.wasm`, `${base}.wasm.unityweb`, `${base}.wasm.gz`],
+      };
+
+      async function pick(urls) {
+        for (const url of urls) {
+          try {
+            const res = await fetch(url, { method: 'HEAD' });
+            if (res.ok) return url;
+          } catch (_) { /* ignore */ }
+        }
+        return urls[0];
+      }
+
+      // Load the Unity loader and then create the instance
+      (async function start() {
+        const [dataUrl, frameworkUrl, codeUrl] = await Promise.all([
+          pick(candidates.data),
+          pick(candidates.framework),
+          pick(candidates.wasm),
+        ]);
+
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = loaderUrl;
+          s.onload = resolve;
+          s.onerror = () => reject(new Error('Failed to load Unity loader: ' + loaderUrl));
+          document.body.appendChild(s);
+        });
+
+        const canvas = document.getElementById('unity-canvas');
+        window.createUnityInstance(canvas, {
+          dataUrl,
+          frameworkUrl,
+          codeUrl,
+          streamingAssetsUrl: `/${encodedFolder}/StreamingAssets`,
+          matchWebGLToCanvasSize: true,
+          devicePixelRatio: (window.innerWidth < 600 ? 1 : Math.min(2, window.devicePixelRatio || 1)),
+        }).then(instance => {
+          // Fullscreen button
+          const fsBtn = document.getElementById('fs-btn');
+          fsBtn?.addEventListener('click', () => {
+            try { instance.SetFullscreen(1); } catch (_) {
+              const el = canvas;
+              const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen || el.mozRequestFullScreen;
+              req && req.call(el);
+            }
+          });
+        }).catch(err => {
+          console.error('Unity failed to load:', err);
+        });
+      })();
+    </script>
+  </body>
+  </html>
